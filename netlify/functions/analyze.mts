@@ -122,9 +122,12 @@ export default async (req: Request, context: Context) => {
       const aiData = JSON.parse(responseText);
       const sheetUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
+      console.log("準備發送資料到 Sheets..."); // Debug Log 1
+
       if (sheetUrl) {
-        // 使用 fetch 非同步發送 (fire-and-forget)，不需等待 Google 回應
-        fetch(sheetUrl, {
+        // ★★★ 修改重點：加上 await ★★★
+        // 強制 Netlify 等待 fetch 完成後，才能執行下方的 return
+        await fetch(sheetUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -133,7 +136,6 @@ export default async (req: Request, context: Context) => {
             evidence: evidence,
             reasoning: reasoning,
             
-            // 詳細分數與回饋
             claim_score: aiData.claim_score,
             claim_feedback: aiData.claim_feedback,
             evidence_score: aiData.evidence_score,
@@ -141,14 +143,17 @@ export default async (req: Request, context: Context) => {
             reasoning_score: aiData.reasoning_score,
             reasoning_feedback: aiData.reasoning_feedback,
             
-            // 總體結果
             overall_score: aiData.overall_score,
             overall_comment: aiData.overall_comment
           })
-        }).catch(err => console.error("Failed to save to Google Sheets:", err));
+        });
+        console.log("資料已成功發送至 Google Sheets"); // Debug Log 2
+      } else {
+        console.warn("未設定 GOOGLE_SHEETS_WEBHOOK_URL，跳過儲存步驟");
       }
     } catch (sheetError) {
-      console.error("Error preparing data for Google Sheets:", sheetError);
+      // 這裡即使出錯也不要讓整個程式崩潰，只紀錄錯誤
+      console.error("Google Sheets 儲存失敗:", sheetError);
     }
     // ---------------------------------------
 
@@ -174,3 +179,4 @@ export default async (req: Request, context: Context) => {
     });
   }
 };
+
