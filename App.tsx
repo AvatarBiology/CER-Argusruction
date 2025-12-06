@@ -4,7 +4,7 @@ import InputScreen from './components/InputScreen';
 import FeedbackScreen from './components/FeedbackScreen';
 import HistoryScreen from './components/HistoryScreen';
 import HistoryDetailScreen from './components/HistoryDetailScreen';
-import { analyzeArgument } from './services/geminiService';
+import { analyzeArgument } from './services/geminiServices';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('INPUT');
