@@ -99,6 +99,7 @@ export const analyzeArgument = async (data: CerInputData): Promise<AnalysisResul
 
   } else {
     // --- Server-Side Mode (Netlify) ---
+    // 這會呼叫上面的 analyze.mts
     console.log("Calling Netlify Function...");
     try {
         const response = await fetch('/api/analyze', {
