@@ -2,8 +2,6 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { CerInputData, AnalysisResult } from "../types";
 
 // Note: These definitions are duplicated here for the Client-Side fallback mode.
-// In a full production app, you might share these via a common file, but for this structure,
-// keeping them here ensures the Preview works independently.
 const RESPONSE_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -42,15 +40,13 @@ const SYSTEM_INSTRUCTION = `
 `;
 
 export const analyzeArgument = async (data: CerInputData): Promise<AnalysisResult> => {
-  const apiKey = process.env.API_KEY;
-
-  // STRATEGY: 
-  // 1. If API_KEY exists in the client environment (e.g. AI Studio Preview), use it directly.
-  // 2. If API_KEY is missing (e.g. Netlify Production where we don't expose keys to client), call the backend function.
+  // Use Vite's import.meta.env to check for a client-side key (mostly for local dev).
+  // In Netlify production, this will likely be undefined, triggering the backend fallback.
+  const apiKey = import.meta.env.VITE_API_KEY;
 
   if (apiKey) {
-    // --- Client-Side Mode (Preview) ---
-    console.log("Using Client-Side API Key (Preview Mode)");
+    // --- Client-Side Mode (Local Dev / Preview) ---
+    console.log("Using Client-Side API Key");
     const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `
