@@ -68,7 +68,7 @@ export default async (req: Request, context: Context) => {
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-001",
+      model: "gemini-2.0-flash-exp",
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: {
         responseMimeType: "application/json",
@@ -101,4 +101,5 @@ export default async (req: Request, context: Context) => {
     });
   }
 };
+
 
