@@ -3,6 +3,26 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
+// 定義回傳格式 Schema
+const schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    overall_score: { type: SchemaType.INTEGER },
+    overall_comment: { type: SchemaType.STRING },
+    claim_score: { type: SchemaType.INTEGER },
+    claim_feedback: { type: SchemaType.STRING },
+    evidence_score: { type: SchemaType.INTEGER },
+    evidence_feedback: { type: SchemaType.STRING },
+    reasoning_score: { type: SchemaType.INTEGER },
+    reasoning_feedback: { type: SchemaType.STRING },
+    achievement_badge: { type: SchemaType.STRING },
+  },
+  required: [
+    "overall_score", "overall_comment", "claim_score", "claim_feedback",
+    "evidence_score", "evidence_feedback", "reasoning_score", "reasoning_feedback", "achievement_badge",
+  ],
+};
+
 const SYSTEM_INSTRUCTION = `
 你是一位經驗豐富且態度友善的高中生物科教師，同時也是科學探究與實作的專家。你的任務是批改學生提交的「科學論證 (CER)」作業，並協助學生釐清邏輯思維。
 
@@ -44,26 +64,6 @@ const SYSTEM_INSTRUCTION = `
 
 現在，請針對學生的作業進行分析，並產生 JSON 格式的回覆。
 `;
-
-// 定義回傳格式 Schema
-const schema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    overall_score: { type: SchemaType.INTEGER },
-    overall_comment: { type: SchemaType.STRING },
-    claim_score: { type: SchemaType.INTEGER },
-    claim_feedback: { type: SchemaType.STRING },
-    evidence_score: { type: SchemaType.INTEGER },
-    evidence_feedback: { type: SchemaType.STRING },
-    reasoning_score: { type: SchemaType.INTEGER },
-    reasoning_feedback: { type: SchemaType.STRING },
-    achievement_badge: { type: SchemaType.STRING },
-  },
-  required: [
-    "overall_score", "overall_comment", "claim_score", "claim_feedback",
-    "evidence_score", "evidence_feedback", "reasoning_score", "reasoning_feedback", "achievement_badge",
-  ],
-};
 
 export default async (req: Request, context: Context) => {
   // 處理 CORS
@@ -116,6 +116,42 @@ export default async (req: Request, context: Context) => {
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
+    // --- 新增：將資料傳送到 Google Sheets ---
+    // 這裡我們會解析 AI 回傳的 JSON，以便將細項分數與回饋分開傳送
+    try {
+      const aiData = JSON.parse(responseText);
+      const sheetUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+
+      if (sheetUrl) {
+        // 使用 fetch 非同步發送 (fire-and-forget)，不需等待 Google 回應
+        fetch(sheetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: topic || '未指定',
+            claim: claim,
+            evidence: evidence,
+            reasoning: reasoning,
+            
+            // 詳細分數與回饋
+            claim_score: aiData.claim_score,
+            claim_feedback: aiData.claim_feedback,
+            evidence_score: aiData.evidence_score,
+            evidence_feedback: aiData.evidence_feedback,
+            reasoning_score: aiData.reasoning_score,
+            reasoning_feedback: aiData.reasoning_feedback,
+            
+            // 總體結果
+            overall_score: aiData.overall_score,
+            overall_comment: aiData.overall_comment
+          })
+        }).catch(err => console.error("Failed to save to Google Sheets:", err));
+      }
+    } catch (sheetError) {
+      console.error("Error preparing data for Google Sheets:", sheetError);
+    }
+    // ---------------------------------------
+
     return new Response(responseText, {
       headers: { 
         "Content-Type": "application/json",
@@ -138,8 +174,3 @@ export default async (req: Request, context: Context) => {
     });
   }
 };
-
-
-
-
-
