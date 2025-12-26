@@ -1,7 +1,7 @@
 import { Context, Request } from "@netlify/functions";
 
 // 從 Netlify 環境變數取得 OpenRouter API Key
-const API_KEY = process.env.GOOGLE_API_KEY; 
+const API_KEY = process.env.OPENROUTER_API_KEY; 
 const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // 您的完整詳盡系統指令
@@ -122,3 +122,4 @@ export default async (req: Request, context: Context) => {
     });
   }
 };
+
